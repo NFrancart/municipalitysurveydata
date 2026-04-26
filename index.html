@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klimatiltag</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;font-size:15px;line-height:1.6;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f5f5f3}
+.login-card{background:#fff;border:0.5px solid #ddd;border-radius:12px;padding:2.5rem 2rem;width:340px;text-align:center}
+.login-card h1{font-size:20px;font-weight:500;margin-bottom:0.5rem}
+.login-card p{font-size:13px;color:#666;margin-bottom:1.5rem}
+.login-card input{width:100%;padding:10px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:14px;margin-bottom:0.75rem;outline:none}
+.login-card input:focus{border-color:#888}
+.login-card button{width:100%;padding:10px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+.login-card button:hover{background:#333}
+.login-error{color:#c0392b;font-size:13px;margin-top:0.5rem;display:none}
+#app{display:none;min-height:100vh}
+header{background:#fff;border-bottom:0.5px solid #ddd;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:18px;font-weight:500}
+header span{font-size:13px;color:#888}
+.layout{display:flex;min-height:calc(100vh - 57px)}
+.sidebar{width:260px;min-width:260px;background:#fff;border-right:0.5px solid #ddd;padding:1.25rem;overflow-y:auto}
+.sidebar h2{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-bottom:1rem}
+.filter-group{margin-bottom:1.5rem}
+.filter-group h3{font-size:13px;font-weight:500;color:#444;margin-bottom:0.5rem}
+.checkbox-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer}
+.checkbox-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#1a1a1a}
+.main{flex:1;padding:1.5rem 2rem;overflow-y:auto}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.toolbar input[type=text]{padding:8px 12px;border:0.5px solid #ccc;border-radius:8px;font-size:13px;width:260px;outline:none}
+.toolbar input:focus{border-color:#888}
+.results-count{font-size:13px;color:#888}
+.actions-grid{display:flex;flex-direction:column;gap:10px}
+.action-card{background:#fff;border:0.5px solid #ddd;border-radius:10px;padding:1rem 1.25rem;cursor:pointer;transition:border-color 0.15s}
+.action-card:hover{border-color:#999}
+.action-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.action-card h3{font-size:14px;font-weight:500;margin-bottom:4px}
+.action-card .municipality{font-size:12px;color:#888}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.badge-type-tilpasning{background:#E1F5EE;color:#0F6E56}
+.badge-type-reduktion{background:#E6F1FB;color:#185FA5}
+.badge-type-begge{background:#EEEDFE;color:#3C3489}
+.badge-status{background:#f1efe8;color:#5f5e5a}
+.badge-prioritet{background:#FAEEDA;color:#633806}
+.no-results{text-align:center;color:#888;padding:3rem;font-size:14px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:100;align-items:flex-start;justify-content:center;padding:2rem;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:680px;padding:2rem;position:relative;margin:auto}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:0.5px solid #ccc;border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer;color:#555}
+.modal-close:hover{background:#f5f5f3}
+.modal h2{font-size:17px;font-weight:500;margin-bottom:0.25rem}
+.modal .modal-sub{font-size:13px;color:#888;margin-bottom:1.5rem}
+.section-title{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:#aaa;margin:1.25rem 0 0.5rem}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.detail-item{background:#f9f9f7;border-radius:8px;padding:0.75rem 1rem}
+.detail-item .label{font-size:11px;color:#999;margin-bottom:2px}
+.detail-item .value{font-size:13px;color:#1a1a1a;line-height:1.4}
+.detail-full{grid-column:1/-1}
+.detail-long{background:#f9f9f7;border-radius:8px;padding:0.75rem 1rem;margin-bottom:8px}
+.detail-long .label{font-size:11px;color:#999;margin-bottom:4px}
+.detail-long .value{font-size:13px;color:#1a1a1a;line-height:1.5}
+.muni-section{background:#f0f4ff;border-radius:8px;padding:1rem;margin-top:0.5rem}
+.muni-section .label{font-size:11px;color:#5a6aaa;margin-bottom:2px}
+.muni-section .value{font-size:13px;color:#1a1a1a}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <h1>Klimatiltag</h1>
+    <p>Indtast adgangskode for at fortsætte</p>
+    <input type="password" id="pw-input" placeholder="Adgangskode" onkeydown="if(event.key==='Enter')tryLogin()"/>
+    <button onclick="tryLogin()">Log ind</button>
+    <div class="login-error" id="login-error">Forkert adgangskode. Prøv igen.</div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <h1>Klimatiltag — Overblik</h1>
+    <span>Kommunale klimadata</span>
+  </header>
+  <div class="layout">
+    <div class="sidebar">
+      <h2>Filtre</h2>
+      <div class="filter-group">
+        <h3>Type</h3>
+        <div id="filter-type"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Status</h3>
+        <div id="filter-status"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Prioriteret</h3>
+        <div id="filter-prioritet"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Sektor</h3>
+        <div id="filter-sektor"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Klimafarer</h3>
+        <div id="filter-klimafarer"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Kommune</h3>
+        <div id="filter-municipality"></div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="toolbar">
+        <input type="text" id="search-input" placeholder="Søg efter tiltag..." oninput="renderActions()"/>
+        <span class="results-count" id="results-count"></span>
+      </div>
+      <div class="actions-grid" id="actions-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+const PASS = "klima2025";
+
+const municipalities = [
+  {
+    id: "Aabenraa",
+    name: "Aabenraa",
+    "1.1a-reduktion_organisation": "Arbejdet er forankret i forvaltningen Plan, Teknik & Miljø i en klimastyregruppe med direktør og to afdelingschefer, som bæredygtighedskoordinatoren refererer til som projektleder på klimaplanen.",
+    "1.11-mainstream-reduktion": "Nej",
+    "1.11-mainstream-reduktion-planer": "Varmeplan, mobilitetsplan",
+    "1.11-mainstream-tilpasning": "Ja, i høj grad",
+    "1.12-politisk-opbakning": "Helt enig",
+    "1.13-ledelse-fokus": "Helt enig",
+    "1.7-kommunal-finansiering": "Kommunen har afsat midler til implementeringen af klimahandlingsplanen",
+    "1.7-kommunal-finansiering_beløb-tid": "I budget 2026-2027 er der afsat 1. mio. kr. til helhedsplan for Kassø (Power-to-X). To puljer til bæredygtig udvikling på hver 5 mio. kr. fra hhv. budget 2023 og 2024 er fortsat under udmøntning.",
+    "1.18-kompetencer-reduktion": "Ja, det har vi i høj grad",
+    "1.19-kompetencer-tilpasning": "Vi ved noget i dag og har et overblik over, hvor vi fortsat mangler viden og kompetencer på området",
+    "1.4-medarbejdere": "1",
+    "1.3-årsværk-reduktion": "2",
+    "1.3-årsværk-tilpasning": "2",
+    "1.8-klimahensyn-politiske-beslutninger": "Nej",
+    "1.9-klimahensyn-budget": "Nej",
+    "1.26-bemærkninger": "Der er ny lovgivning på terrænnærtgrundvand, som kommunen skal lære at arbejde med."
+  }
+];
+
+const actions = [
+  {
+    id: "Aabenraa-Klimatiltag-1",
+    municipality: "Aabenraa",
+    "3.1-titel": "Sikring af Aabenraa by mod oversvømmelser",
+    "3.2-prioriteret": "Ja",
+    "3.3b-status": "Igangværende",
+    "3.3c-hvornår-100%": "2025",
+    "3.3d-status_u": "Opførsel af en højvandsmur er vedtaget og forventes opført i 2025. Der er enkelte huller i den planlagte højvandsmur, der sikres med beredskabstiltag indtil en permanent løsning findes.",
+    "3.4-reduktion-tilpasning-begge": "Klimatilpasning",
+    "3.5a-sektor_u": "Beredskabsplanlægning",
+    "3.6a-klimafarer_u": "Stormflod / oversvømmelse",
+    "3.7-tiltagstype_u": "Anlægsprojekt",
+    "3.8-rolle_u": "Myndighedsrolle",
+    "3.9-impact-forventet": "At klimasikre Aabenraa by mod fremtidige stormfloder",
+    "3.9-outcome-forventet": "At sikre byen mod højvandshændelser op til kote +2,5m",
+    "3.9-output-forventet": "Opførsel af højvandssikringer, f.eks. højvandsmur og sluser",
+    "3.10-impact-foreløbig": "",
+    "3.10-outcome-foreløbig": "Byen er delvist sikret til kote +2,5m",
+    "3.10-output-foreløbig": "Pumpe-sluse er opført. Aftale om etablering af højvandsmur er indgået mellem kommunen og Aabenraa Havn.",
+    "3.11-opfølgning": "Vi har endnu ikke en fast procedure for at følge tiltagets fremdrift",
+    "3.12-barrierer_u": "",
+    "3.13-hvad_ellers": "Der er indgået en aftale mellem kommunen og erhvervshavnen om etablering af en højvandsmur på havnens arealer. Der er huller, som vil blive sikret med beredskabstiltag indtil kommunen etablerer permanente sikringer.",
+    "3.1-beskriv-tiltaget": "Klimasikring af Aabenraa by mod stormflod ved etablering af højvandsmure, sluser og pumpeanlæg langs kysten og vandløb."
+  },
+  {
+    id: "Aabenraa-Klimatiltag-2",
+    municipality: "Aabenraa",
+    "3.1-titel": "Mobilitetsplan — grøn transport",
+    "3.2-prioriteret": "Ja",
+    "3.3b-status": "Planlagt",
+    "3.3c-hvornår-100%": "2027",
+    "3.3d-status_u": "Mobilitetsplanen er under udarbejdelse og forventes vedtaget i 2026 med implementering frem mod 2027.",
+    "3.4-reduktion-tilpasning-begge": "Reduktion",
+    "3.5a-sektor_u": "Transport",
+    "3.6a-klimafarer_u": "Ikke relevant",
+    "3.7-tiltagstype_u": "Plan / strategi",
+    "3.8-rolle_u": "Planlægningsmyndighed",
+    "3.9-impact-forventet": "Reducere CO₂-udledning fra transport i kommunen",
+    "3.9-outcome-forventet": "Øget andel af gang, cykel og kollektiv trafik",
+    "3.9-output-forventet": "Vedtaget mobilitetsplan med konkrete handlinger",
+    "3.10-impact-foreløbig": "",
+    "3.10-outcome-foreløbig": "",
+    "3.10-output-foreløbig": "Kortlægning af transportvaner igangsat",
+    "3.11-opfølgning": "Opfølgning planlagt via årlig statusrapport",
+    "3.12-barrierer_u": "Finansiering og politisk prioritering",
+    "3.13-hvad_ellers": "",
+    "3.1-beskriv-tiltaget": "Udarbejdelse af en samlet mobilitetsplan for kommunen med fokus på reduktion af biltrafik og fremme af bæredygtige transportformer."
+  },
+  {
+    id: "Aabenraa-Klimatiltag-3",
+    municipality: "Aabenraa",
+    "3.1-titel": "Varmeplan — udfasning af fossil opvarmning",
+    "3.2-prioriteret": "Nej",
+    "3.3b-status": "Afsluttet",
+    "3.3c-hvornår-100%": "2024",
+    "3.3d-status_u": "Varmeplanen er vedtaget og implementeringen er i gang i samarbejde med forsyningsselskaber.",
+    "3.4-reduktion-tilpasning-begge": "Reduktion",
+    "3.5a-sektor_u": "Energi / varme",
+    "3.6a-klimafarer_u": "Ikke relevant",
+    "3.7-tiltagstype_u": "Plan / strategi",
+    "3.8-rolle_u": "Planlægningsmyndighed",
+    "3.9-impact-forventet": "Markant reduktion i CO₂-udledning fra opvarmning",
+    "3.9-outcome-forventet": "Udfasning af olie- og gasfyr i kommunen",
+    "3.9-output-forventet": "Vedtaget varmeplan med kortlægning og handlingsplan",
+    "3.10-impact-foreløbig": "Reduktion i fossilt brændstofforbrug til opvarmning",
+    "3.10-outcome-foreløbig": "Flere borgere tilsluttet fjernvarme",
+    "3.10-output-foreløbig": "Varmeplan vedtaget af kommunalbestyrelsen",
+    "3.11-opfølgning": "Årlig opfølgning via energistatistik",
+    "3.12-barrierer_u": "Økonomi for borgere og forsyning",
+    "3.13-hvad_ellers": "",
+    "3.1-beskriv-tiltaget": "Udarbejdelse og implementering af en kommunal varmeplan med fokus på udfasning af fossile brændsler og udvidelse af fjernvarmenettet."
+  }
+];
+
+let activeFilters = { type: [], status: [], prioritet: [], sektor: [], klimafarer: [], municipality: [] };
+
+function tryLogin() {
+  const val = document.getElementById("pw-input").value;
+  if (val === PASS) {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    initApp();
+  } else {
+    const err = document.getElementById("login-error");
+    err.style.display = "block";
+    setTimeout(() => err.style.display = "none", 3000);
+  }
+}
+
+function unique(arr) { return [...new Set(arr.filter(Boolean))].sort(); }
+
+function buildFilters() {
+  const types = unique(actions.map(a => a["3.4-reduktion-tilpasning-begge"]));
+  const statuses = unique(actions.map(a => a["3.3b-status"]));
+  const prioriteter = unique(actions.map(a => a["3.2-prioriteret"]));
+  const sektorer = unique(actions.map(a => a["3.5a-sektor_u"]));
+  const farer = unique(actions.map(a => a["3.6a-klimafarer_u"]));
+  const munis = unique(actions.map(a => a.municipality));
+
+  renderCheckboxes("filter-type", types, "type");
+  renderCheckboxes("filter-status", statuses, "status");
+  renderCheckboxes("filter-prioritet", prioriteter, "prioritet");
+  renderCheckboxes("filter-sektor", sektorer, "sektor");
+  renderCheckboxes("filter-klimafarer", farer, "klimafarer");
+  renderCheckboxes("filter-municipality", munis, "municipality");
+}
+
+function renderCheckboxes(containerId, values, filterKey) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = values.map(v => `
+    <label class="checkbox-item">
+      <input type="checkbox" value="${v}" onchange="toggleFilter('${filterKey}','${v}')"/>
+      ${v}
+    </label>`).join("");
+}
+
+function toggleFilter(key, val) {
+  const arr = activeFilters[key];
+  const i = arr.indexOf(val);
+  if (i === -1) arr.push(val); else arr.splice(i, 1);
+  renderActions();
+}
+
+function typeBadgeClass(t) {
+  if (!t) return "badge-status";
+  const l = t.toLowerCase();
+  if (l.includes("tilpasning")) return "badge-type-tilpasning";
+  if (l.includes("reduktion")) return "badge-type-reduktion";
+  if (l.includes("begge")) return "badge-type-begge";
+  return "badge-status";
+}
+
+function renderActions() {
+  const search = document.getElementById("search-input").value.toLowerCase();
+  let filtered = actions.filter(a => {
+    const matchSearch = !search ||
+      a["3.1-titel"].toLowerCase().includes(search) ||
+      a.municipality.toLowerCase().includes(search) ||
+      (a["3.1-beskriv-tiltaget"] || "").toLowerCase().includes(search);
+    const f = activeFilters;
+    return matchSearch &&
+      (!f.type.length || f.type.includes(a["3.4-reduktion-tilpasning-begge"])) &&
+      (!f.status.length || f.status.includes(a["3.3b-status"])) &&
+      (!f.prioritet.length || f.prioritet.includes(a["3.2-prioriteret"])) &&
+      (!f.sektor.length || f.sektor.includes(a["3.5a-sektor_u"])) &&
+      (!f.klimafarer.length || f.klimafarer.includes(a["3.6a-klimafarer_u"])) &&
+      (!f.municipality.length || f.municipality.includes(a.municipality));
+  });
+
+  const grid = document.getElementById("actions-grid");
+  document.getElementById("results-count").textContent = `${filtered.length} tiltag`;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="no-results">Ingen tiltag matcher de valgte filtre.</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => `
+    <div class="action-card" onclick="openModal('${a.id}')">
+      <div class="action-card-top">
+        <div>
+          <h3>${a["3.1-titel"]}</h3>
+          <div class="municipality">${a.municipality}</div>
+          <div class="badges">
+            <span class="badge ${typeBadgeClass(a["3.4-reduktion-tilpasning-begge"])}">${a["3.4-reduktion-tilpasning-begge"] || "—"}</span>
+            ${a["3.3b-status"] ? `<span class="badge badge-status">${a["3.3b-status"]}</span>` : ""}
+            ${a["3.2-prioriteret"] === "Ja" ? `<span class="badge badge-prioritet">Prioriteret</span>` : ""}
+          </div>
+        </div>
+        <div style="font-size:12px;color:#aaa;white-space:nowrap;padding-top:2px">${a["3.3c-hvornår-100%"] || ""}</div>
+      </div>
+      ${a["3.1-beskriv-tiltaget"] ? `<p style="font-size:13px;color:#666;margin-top:10px;line-height:1.5">${a["3.1-beskriv-tiltaget"].slice(0,180)}${a["3.1-beskriv-tiltaget"].length>180?"…":""}</p>` : ""}
+    </div>`).join("");
+}
+
+function det(label, val) {
+  if (!val) return "";
+  return `<div class="detail-item"><div class="label">${label}</div><div class="value">${val}</div></div>`;
+}
+function detFull(label, val) {
+  if (!val) return "";
+  return `<div class="detail-long detail-full"><div class="label">${label}</div><div class="value">${val}</div></div>`;
+}
+
+function openModal(id) {
+  const a = actions.find(x => x.id === id);
+  const m = municipalities.find(x => x.id === a.municipality);
+  if (!a) return;
+  const overlay = document.getElementById("modal-overlay");
+  document.getElementById("modal-content").innerHTML = `
+    <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">Luk ✕</button>
+    <h2>${a["3.1-titel"]}</h2>
+    <div class="modal-sub">${a.municipality} &middot; ${a["3.4-reduktion-tilpasning-begge"] || ""}</div>
+    <div class="badges" style="margin-bottom:1rem">
+      <span class="badge ${typeBadgeClass(a["3.4-reduktion-tilpasning-begge"])}">${a["3.4-reduktion-tilpasning-begge"] || ""}</span>
+      ${a["3.3b-status"] ? `<span class="badge badge-status">${a["3.3b-status"]}</span>` : ""}
+      ${a["3.2-prioriteret"] === "Ja" ? `<span class="badge badge-prioritet">Prioriteret</span>` : ""}
+    </div>
+
+    <div class="section-title">Om tiltaget</div>
+    <div class="detail-grid">
+      ${detFull("Beskrivelse", a["3.1-beskriv-tiltaget"])}
+      ${det("Tiltagstype", a["3.7-tiltagstype_u"])}
+      ${det("Rolle", a["3.8-rolle_u"])}
+      ${det("Sektor", a["3.5a-sektor_u"])}
+      ${det("Klimafarer", a["3.6a-klimafarer_u"])}
+      ${det("Forventet afslutning", a["3.3c-hvornår-100%"])}
+    </div>
+    ${a["3.3d-status_u"] ? `<div style="margin-top:8px">${detFull("Statusbeskrivelse", a["3.3d-status_u"])}</div>` : ""}
+
+    <div class="section-title">Forventede resultater</div>
+    <div class="detail-grid">
+      ${detFull("Forventet impact", a["3.9-impact-forventet"])}
+      ${detFull("Forventet outcome", a["3.9-outcome-forventet"])}
+      ${detFull("Forventet output", a["3.9-output-forventet"])}
+    </div>
+
+    <div class="section-title">Foreløbige resultater</div>
+    <div class="detail-grid">
+      ${a["3.10-impact-foreløbig"] ? detFull("Foreløbig impact", a["3.10-impact-foreløbig"]) : ""}
+      ${detFull("Foreløbig outcome", a["3.10-outcome-foreløbig"])}
+      ${detFull("Foreløbig output", a["3.10-output-foreløbig"])}
+    </div>
+
+    <div class="section-title">Opfølgning og barrierer</div>
+    <div class="detail-grid">
+      ${detFull("Opfølgningsprocedure", a["3.11-opfølgning"])}
+      ${a["3.12-barrierer_u"] ? detFull("Barrierer", a["3.12-barrierer_u"]) : ""}
+      ${a["3.13-hvad_ellers"] ? detFull("Yderligere bemærkninger", a["3.13-hvad_ellers"]) : ""}
+    </div>
+
+    ${m ? `
+    <div class="section-title">Om kommunen</div>
+    <div class="muni-section">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div class="label">Politisk opbakning</div><div class="value" style="font-size:13px">${m["1.12-politisk-opbakning"] || "—"}</div></div>
+        <div><div class="label">Ledelse fokus</div><div class="value" style="font-size:13px">${m["1.13-ledelse-fokus"] || "—"}</div></div>
+        <div><div class="label">Finansiering</div><div class="value" style="font-size:13px">${m["1.7-kommunal-finansiering"] || "—"}</div></div>
+        <div><div class="label">Kompetencer (reduktion)</div><div class="value" style="font-size:13px">${m["1.18-kompetencer-reduktion"] || "—"}</div></div>
+      </div>
+      ${m["1.7-kommunal-finansiering_beløb-tid"] ? `<div style="margin-top:10px"><div class="label">Finansieringsdetaljer</div><div class="value" style="font-size:13px;margin-top:3px">${m["1.7-kommunal-finansiering_beløb-tid"]}</div></div>` : ""}
+    </div>` : ""}
+  `;
+  overlay.classList.add("open");
+}
+
+function closeModal(e) {
+  if (e.target.id === "modal-overlay") document.getElementById("modal-overlay").classList.remove("open");
+}
+
+function initApp() {
+  buildFilters();
+  renderActions();
+}
+</script>
+</body>
+</html>
