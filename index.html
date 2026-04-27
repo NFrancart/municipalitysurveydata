@@ -116,7 +116,7 @@ header span{font-size:13px;color:#888}
 <script>
 const PASS = "klima2025";
 const ACTIONS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgKh2cE6-yUH8s1maftTT3G-M_EIyBGMgK7_5Wp_rBKa_HGGr52bTx5pJ4UUh89MSv8jP7t-Zz5hRP/pub?gid=0&single=true&output=csv";
-const MUNIS_URL  = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgKh2cE6-yUH8s1maftTT3G-M_EIyBGMgK7_5Wp_rBKa_HGGr52bTx5pJ4UUh89MSv8jP7t-Zz5hRP/pub?gid=830274496&single=true&output=csv";
+const MUNIS_URL   = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgKh2cE6-yUH8s1maftTT3G-M_EIyBGMgK7_5Wp_rBKa_HGGr52bTx5pJ4UUh89MSv8jP7t-Zz5hRP/pub?gid=830274496&single=true&output=csv";
 
 let actions = [], municipalities = [];
 let activeFilters = {type:[],status:[],prioritet:[],sektor:[],klimafarer:[],municipality:[]};
@@ -133,10 +133,12 @@ function tryLogin() {
   }
 }
 
-function parseCsv(url) {
+async function fetchCsv(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  const text = await res.text();
   return new Promise((resolve, reject) => {
-    Papa.parse(url, {
-      download: true,
+    Papa.parse(text, {
       header: true,
       skipEmptyLines: true,
       complete: r => resolve(r.data),
@@ -149,14 +151,14 @@ async function loadData() {
   const grid = document.getElementById("actions-grid");
   try {
     grid.innerHTML = '<div class="loading">Henter data fra Google Sheets...</div>';
-    [actions, municipalities] = await Promise.all([parseCsv(ACTIONS_URL), parseCsv(MUNIS_URL)]);
+    [actions, municipalities] = await Promise.all([fetchCsv(ACTIONS_URL), fetchCsv(MUNIS_URL)]);
     document.getElementById("header-sub").textContent =
       `${municipalities.length} kommuner · ${actions.length} tiltag`;
     buildFilters();
     renderActions();
   } catch(e) {
-    grid.innerHTML = '<div class="error-msg">Kunne ikke hente data. Tjek at Google Sheet er offentliggjort korrekt.</div>';
-    console.error(e);
+    grid.innerHTML = `<div class="error-msg">Kunne ikke hente data.<br><small style="color:#999">${e.message}</small></div>`;
+    console.error("Full error:", e);
   }
 }
 
@@ -276,7 +278,7 @@ function openModal(idx) {
 
   document.getElementById("modal-content").innerHTML = `
     <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">Luk ✕</button>
-    <h2>${getTitel(a)||(utan titel)}</h2>
+    <h2>${getTitel(a)||"(uden titel)"}</h2>
     <div class="modal-sub">${muni} &middot; ${getType(a)||""}</div>
     <div class="badges" style="margin-bottom:1rem">
       <span class="badge ${typeBadgeClass(getType(a))}">${getType(a)||""}</span>
