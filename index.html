@@ -91,7 +91,32 @@ header span{font-size:13px;color:#888}
     <div class="sidebar">
       <h2>Filtre</h2>
       <div class="filter-group"><h3>Type</h3><div id="filter-type"></div></div>
-      <div class="filter-group"><h3>Status</h3><div id="filter-status"></div></div>
+      <div class="filter-group">
+        <h3>Status (%)</h3>
+        <div style="padding:4px 2px">
+          <div style="position:relative;height:28px;margin-bottom:10px" id="slider-track-wrap">
+            <div style="position:absolute;top:50%;left:0;right:0;height:4px;background:#e0e0e0;border-radius:2px;transform:translateY(-50%)" id="slider-bg"></div>
+            <div style="position:absolute;top:50%;height:4px;background:#1a1a1a;border-radius:2px;transform:translateY(-50%)" id="slider-fill"></div>
+            <input type="range" id="slider-min" min="0" max="100" value="0" step="1"
+              style="position:absolute;width:100%;top:50%;transform:translateY(-50%);appearance:none;background:transparent;pointer-events:none;height:4px"/>
+            <input type="range" id="slider-max" min="0" max="100" value="100" step="1"
+              style="position:absolute;width:100%;top:50%;transform:translateY(-50%);appearance:none;background:transparent;pointer-events:none;height:4px"/>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="flex:1">
+              <div style="font-size:11px;color:#999;margin-bottom:3px">Min</div>
+              <input type="number" id="num-min" min="0" max="100" value="0"
+                style="width:100%;padding:5px 8px;border:0.5px solid #ccc;border-radius:6px;font-size:13px;outline:none"/>
+            </div>
+            <div style="color:#ccc;padding-top:16px">—</div>
+            <div style="flex:1">
+              <div style="font-size:11px;color:#999;margin-bottom:3px">Max</div>
+              <input type="number" id="num-max" min="0" max="100" value="100"
+                style="width:100%;padding:5px 8px;border:0.5px solid #ccc;border-radius:6px;font-size:13px;outline:none"/>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="filter-group"><h3>Prioriteret</h3><div id="filter-prioritet"></div></div>
       <div class="filter-group"><h3>Sektor</h3><div id="filter-sektor"></div></div>
       <div class="filter-group"><h3>Klimafarer</h3><div id="filter-klimafarer"></div></div>
@@ -119,7 +144,8 @@ const ACTIONS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgKh2cE6-y
 const MUNIS_URL   = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgKh2cE6-yUH8s1maftTT3G-M_EIyBGMgK7_5Wp_rBKa_HGGr52bTx5pJ4UUh89MSv8jP7t-Zz5hRP/pub?gid=830274496&single=true&output=csv";
 
 let actions = [], municipalities = [];
-let activeFilters = {type:[],status:[],prioritet:[],sektor:[],klimafarer:[],municipality:[]};
+let activeFilters = {type:[],prioritet:[],sektor:[],klimafarer:[],municipality:[]};
+let statusRange = {min:0, max:100};
 
 function tryLogin() {
   if (document.getElementById("pw-input").value === PASS) {
@@ -173,13 +199,65 @@ function col(a, ...keys) {
 }
 
 function buildFilters() {
-  const f = (key, ...cols) => unique(actions.map(a => col(a, ...cols)));
-  renderCheckboxes("filter-type",         f("type","3.4-reduktion-tilpasning-begge"), "type");
-  renderCheckboxes("filter-status",       f("status","3.3b-status"),                  "status");
-  renderCheckboxes("filter-prioritet",    f("pri","3.2-prioriteret"),                 "prioritet");
-  renderCheckboxes("filter-sektor",       f("sek","3.5a-sektor_u"),                   "sektor");
-  renderCheckboxes("filter-klimafarer",   f("kf","3.6a-klimafarer_u"),                "klimafarer");
-  renderCheckboxes("filter-municipality", unique(actions.map(a => a.Municipality || a.municipality || "")), "municipality");
+  const f = (...cols) => unique(actions.map(a => col(a, ...cols)));
+  renderCheckboxes("filter-type",         f("3.4-reduktion-tilpasning-begge"), "type");
+  renderCheckboxes("filter-prioritet",    f("3.2-prioriteret"),                "prioritet");
+  renderCheckboxes("filter-sektor",       f("3.5a-sektor_u"),                  "sektor");
+  renderCheckboxes("filter-klimafarer",   f("3.6a-klimafarer_u"),              "klimafarer");
+  renderCheckboxes("filter-municipality", unique(actions.map(a => getMuni(a))),"municipality");
+  initSlider();
+}
+
+function initSlider() {
+  const sMin = document.getElementById("slider-min");
+  const sMax = document.getElementById("slider-max");
+  const nMin = document.getElementById("num-min");
+  const nMax = document.getElementById("num-max");
+
+  function updateFill() {
+    const lo = parseInt(sMin.value), hi = parseInt(sMax.value);
+    const fill = document.getElementById("slider-fill");
+    fill.style.left = lo + "%";
+    fill.style.width = (hi - lo) + "%";
+  }
+
+  function syncFromSliders() {
+    let lo = parseInt(sMin.value), hi = parseInt(sMax.value);
+    if (lo > hi) { [lo, hi] = [hi, lo]; sMin.value = lo; sMax.value = hi; }
+    nMin.value = lo; nMax.value = hi;
+    statusRange = {min: lo, max: hi};
+    updateFill(); renderActions();
+  }
+
+  function syncFromNumbers() {
+    let lo = Math.max(0, Math.min(100, parseInt(nMin.value)||0));
+    let hi = Math.max(0, Math.min(100, parseInt(nMax.value)||100));
+    if (lo > hi) [lo, hi] = [hi, lo];
+    nMin.value = lo; nMax.value = hi;
+    sMin.value = lo; sMax.value = hi;
+    statusRange = {min: lo, max: hi};
+    updateFill(); renderActions();
+  }
+
+  sMin.addEventListener("input", syncFromSliders);
+  sMax.addEventListener("input", syncFromSliders);
+  nMin.addEventListener("change", syncFromNumbers);
+  nMax.addEventListener("change", syncFromNumbers);
+
+  // style the thumbs
+  const style = document.createElement("style");
+  style.textContent = `
+    #slider-min::-webkit-slider-thumb, #slider-max::-webkit-slider-thumb {
+      appearance:none;width:16px;height:16px;border-radius:50%;background:#1a1a1a;
+      pointer-events:all;cursor:pointer;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);
+    }
+    #slider-min::-moz-range-thumb, #slider-max::-moz-range-thumb {
+      width:16px;height:16px;border-radius:50%;background:#1a1a1a;
+      pointer-events:all;cursor:pointer;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);
+    }
+  `;
+  document.head.appendChild(style);
+  updateFill();
 }
 
 function renderCheckboxes(id, vals, key) {
@@ -198,7 +276,7 @@ function toggleFilter(key, val) {
 
 function getMuni(a) { return a.Municipality || a.municipality || ""; }
 function getType(a) { return col(a,"3.4-reduktion-tilpasning-begge"); }
-function getStatus(a) { return col(a,"3.3b-status"); }
+function getStatus(a) { return parseInt(col(a,"3.3b-status"))||0; }
 function getPri(a) { return col(a,"3.2-prioriteret"); }
 function getSektor(a) { return col(a,"3.5a-sektor_u"); }
 function getFare(a) { return col(a,"3.6a-klimafarer_u"); }
@@ -223,7 +301,7 @@ function renderActions() {
       getMuni(a).toLowerCase().includes(search) || getDesc(a).toLowerCase().includes(search);
     return s &&
       (!f.type.length        || f.type.includes(getType(a))) &&
-      (!f.status.length      || f.status.includes(getStatus(a))) &&
+      (getStatus(a) >= statusRange.min && getStatus(a) <= statusRange.max) &&
       (!f.prioritet.length   || f.prioritet.includes(getPri(a))) &&
       (!f.sektor.length      || f.sektor.includes(getSektor(a))) &&
       (!f.klimafarer.length  || f.klimafarer.includes(getFare(a))) &&
