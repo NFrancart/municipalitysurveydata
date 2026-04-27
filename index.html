@@ -125,7 +125,10 @@ function tryLogin() {
   if (document.getElementById("pw-input").value === PASS) {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app").style.display = "block";
-    loadData();
+    loadData().catch(e => {
+      document.getElementById("actions-grid").innerHTML =
+        `<div class="error-msg">Kunne ikke hente data.<br><small style="color:#999">${e.message}</small></div>`;
+    });
   } else {
     const err = document.getElementById("login-error");
     err.style.display = "block";
