@@ -401,12 +401,34 @@ function drawMap(){
       const kd=kommuneFor(name);
       const cnt=_filteredMuniCounts[name]||0;
       tooltip.style.display="block";
-      tooltip.style.left=(event.offsetX+14)+"px";
-      tooltip.style.top=(event.offsetY-10)+"px";
       tooltip.innerHTML=`<strong>${name}</strong>`+
         `Tiltag i resultater: ${cnt}<br>`+
         (col(kd,"Region")?`Region: ${col(kd,"Region")}<br>`:"")+
         (col(kd,"Kommunetype")?`Type: ${col(kd,"Kommunetype")}`:"");
+      
+      // Position tooltip with smart edge detection
+      const mapRect=document.getElementById("map-wrap").getBoundingClientRect();
+      let x=event.offsetX+14, y=event.offsetY-10;
+      
+      // Temporarily show to measure
+      tooltip.style.left="0";
+      tooltip.style.top="0";
+      tooltip.style.visibility="hidden";
+      const tooltipRect=tooltip.getBoundingClientRect();
+      const tooltipW=tooltipRect.width, tooltipH=tooltipRect.height;
+      
+      // Check if tooltip overflows right edge
+      if(x+tooltipW>mapRect.width){
+        x=Math.max(8,event.offsetX-tooltipW-14);
+      }
+      // Check if tooltip overflows bottom edge
+      if(y+tooltipH>mapRect.height){
+        y=event.offsetY-tooltipH-8;
+      }
+      
+      tooltip.style.left=Math.max(0,x)+"px";
+      tooltip.style.top=Math.max(0,y)+"px";
+      tooltip.style.visibility="visible";
     })
     .on("mouseleave",function(){tooltip.style.display="none";})
     .on("click",function(event,d){
