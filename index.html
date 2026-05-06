@@ -233,13 +233,14 @@ header span{font-size:13px;color:#888;white-space:nowrap}
 // ── SUPABASE CONFIG ───────────────────────────────────────────────
 const SUPABASE_URL = 'https://qshfnsubldbksliknrlv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzaGZuc3VibGRia3NsaWtuamxudnZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEwODc4ODYsImV4cCI6MTc2NjY2Mzg4Nn0.Q8jBjlW9Q8e8f5K5vxRy-PZ2hQqXqJ5z9z9z9z9z9z9z'; // Anonymous key
-let supabase;
-// Initialize after window is ready
-window.addEventListener('load', () => {
-  if (window.supabase && window.supabase.createClient) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  }
-});
+let supabase = null;
+
+// Initialize Supabase as soon as script loads
+if (window.supabase && window.supabase.createClient) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // Load municipalities after Supabase is ready
+  setTimeout(() => initMunicipalityList(), 100);
+}
 
 // ── GLOBAL STATE ──────────────────────────────────────────────────
 let currentUser = null;
@@ -815,6 +816,13 @@ async function initMunicipalityList() {
     console.error('Failed to load municipalities:', err);
   }
 }
+
+// Initialize municipalities on page load
+window.addEventListener('load', () => {
+  if (supabase) {
+    initMunicipalityList();
+  }
+});
 
 window.addEventListener('resize', () => {
   if (topoData) drawMap();
