@@ -233,11 +233,11 @@ header span{font-size:13px;color:#888;white-space:nowrap}
 // ── SUPABASE CONFIG ───────────────────────────────────────────────
 const SUPABASE_URL = 'https://qshfnsubldbksliknrlv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzaGZuc3VibGRia3NsaWtuamxudnZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEwODc4ODYsImV4cCI6MTc2NjY2Mzg4Nn0.Q8jBjlW9Q8e8f5K5vxRy-PZ2hQqXqJ5z9z9z9z9z9z9z'; // Anonymous key
-let supabase = null;
+let supabaseClient = null;
 
 // Initialize Supabase as soon as script loads
 if (window.supabase && window.supabase.createClient) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   // Load municipalities after Supabase is ready
   setTimeout(() => initMunicipalityList(), 100);
 }
@@ -264,7 +264,7 @@ async function attemptLogin() {
     return;
   }
 
-  if (!supabase) {
+  if (!supabaseClient) {
     errorEl.textContent = 'Supabase er ikke initialiseret. Genindlæs siden.';
     errorEl.style.display = 'block';
     return;
@@ -272,7 +272,7 @@ async function attemptLogin() {
 
   try {
     // Authenticate with Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
 
     currentUser = data.user;
@@ -290,7 +290,7 @@ async function attemptLogin() {
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   currentUser = null;
   currentMunicipality = null;
   document.getElementById('app').style.display = 'none';
@@ -305,9 +305,9 @@ async function loadData() {
   try {
     // Fetch from Supabase tables
     const [muniRes, actionsRes, rankedRes] = await Promise.all([
-      supabase.from('municipalities').select('*'),
-      supabase.from('actions').select('*'),
-      supabase.from('actions-ranked').select('*')
+      supabaseClient.from('municipalities').select('*'),
+      supabaseClient.from('actions').select('*'),
+      supabaseClient.from('actions-ranked').select('*')
     ]);
 
     if (muniRes.error) throw muniRes.error;
@@ -674,7 +674,7 @@ async function saveAction(actionId) {
     const oldData = { title: oldAction['3.1-titel'], desc: oldAction['3.1-beskriv-tiltaget'], status: oldAction['3.3b-status'], pri: oldAction['3.2-prioriteret'] };
     const newData = { title, desc, status, pri };
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('actions')
       .update({
         '3.1-titel': title,
@@ -712,7 +712,7 @@ async function createAction() {
     // Generate index from municipality + timestamp
     const index = `${currentMunicipality}-${Date.now()}`;
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('actions')
       .insert([{
         index,
@@ -747,7 +747,7 @@ async function deleteAction(actionId) {
       return;
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('actions')
       .delete()
       .eq('id', actionId);
@@ -766,7 +766,7 @@ async function deleteAction(actionId) {
 
 async function logChange(changeType, tableName, recordId, oldData, newData) {
   try {
-    await supabase
+    await supabaseClient
       .from('changelog')
       .insert([{
         user_id: currentUser.id,
@@ -802,12 +802,12 @@ function showToast(msg) {
 
 // ── INIT ──────────────────────────────────────────────────────────
 async function initMunicipalityList() {
-  if (!supabase) {
-    console.error('Supabase not initialized yet');
+  if (!supabaseClient) {
+    console.error('supabase not initialized yet');
     return;
   }
   try {
-    const { data, error } = await supabase.from('municipalities').select('name').order('name');
+    const { data, error } = await supabaseClient.from('municipalities').select('name').order('name');
     if (error) throw error;
     const select = document.getElementById('municipality-select');
     select.innerHTML = '<option value="">Vælg kommune...</option>' +
@@ -819,7 +819,7 @@ async function initMunicipalityList() {
 
 // Initialize municipalities on page load
 window.addEventListener('load', () => {
-  if (supabase) {
+  if (supabaseClient) {
     initMunicipalityList();
   }
 });
