@@ -1,0 +1,1 @@
+This is a prototype dashboard for municipalities to visualize and edit details about their climate actions. The goal is to have a user-friendly platform through which they can track and communicate their own actions and gain inspiration from other municipalities' actions, while making it easy for administrators to monitor their overall progress.
