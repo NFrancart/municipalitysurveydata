@@ -283,7 +283,7 @@ let sb = null;
 if (window.supabase && window.supabase.createClient) {
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
-
+ 
 // ── STATE ─────────────────────────────────────────────────────────
 let currentUser = null;
 let currentMunicipality = null;
@@ -299,7 +299,7 @@ let activeFilters = {
 };
 let editRankedRows = [];
 let _filteredMuniCounts = {};
-
+ 
 // Ranked field definitions used across edit + view
 const RANKED_FIELDS = [
   { key: '3.5a-sektor',              label: 'Sektor' },
@@ -310,7 +310,18 @@ const RANKED_FIELDS = [
   { key: '3.8-rolle',                label: 'Rolle' },
   { key: '3.12-barrierer',           label: 'Barrierer' },
 ];
-
+ 
+// Map from field key to uddybning form field name (shorter IDs)
+const UDDYBNING_IDS = {
+  '3.5a-sektor': 'sektor',
+  '3.5b-indsatsområde': 'indsats',
+  '3.6a-klimafarer': 'klimafarer',
+  '3.6b-oversvømmelse_tilgange': 'oversv',
+  '3.7-tiltagstype': 'tiltagstype',
+  '3.8-rolle': 'rolle',
+  '3.12-barrierer': 'barrierer',
+};
+ 
 // ── HELPERS ───────────────────────────────────────────────────────
 function unique(arr) { return [...new Set(arr.filter(Boolean))].sort(); }
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -328,7 +339,7 @@ function gv(id, fallback = '') {
   return el ? el.value : fallback;
 }
 function dlKey(key) { return 'dl-' + key.replace(/[^a-z0-9]/gi, ''); }
-
+ 
 // ── AUTH ──────────────────────────────────────────────────────────
 async function attemptLogin() {
   const muniVal = document.getElementById('municipality-select').value;
@@ -351,7 +362,7 @@ async function attemptLogin() {
     errEl.textContent = err.message || 'Login fejl'; errEl.style.display = 'block';
   }
 }
-
+ 
 async function logout() {
   if (sb) await sb.auth.signOut();
   currentUser = null; currentMunicipality = null;
@@ -359,7 +370,7 @@ async function logout() {
   document.getElementById('login-screen').style.display = 'flex';
   ['municipality-select','email-input','password-input'].forEach(id => document.getElementById(id).value = '');
 }
-
+ 
 // ── DATA ──────────────────────────────────────────────────────────
 async function loadData() {
   document.getElementById('actions-grid').innerHTML = '<div class="loading">Henter data...</div>';
