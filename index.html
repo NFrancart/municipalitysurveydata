@@ -390,7 +390,7 @@ async function loadData() {
  
     const own = allActions.filter(a => a.municipality === currentMunicipality).length;
     document.getElementById('header-info').textContent =
-      `${currentMunicipality} · ${allMunicipalities.length} kommuner · ${allActions.length} tiltag (${own} dine)`;
+      `${currentMunicipality} · ${allActions.length} tiltag (${own} dine)`;
  
     buildFilters();
     await loadMap();
